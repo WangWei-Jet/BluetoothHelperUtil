@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="BluetoothHelperUtil" default="combine">
+    <property environment="SystemVariable" />
+    <property name="sys.ant.home" value="${SystemVariable.ANT_HOME}" /> 
+	<property name="sdk.dir" value="${SystemVariable.ANDROID_HOME}" />
+    
+	<property name="compileJarName" value="BluetoothHelperUtil.jar" />
+	<property name="proguardJarName" value="BluetoothHelperUtilOut.jar" />
+	<property name="combineJarName" value="BluetoothHelperUtilLib.jar" />
+    
+	<property name="outDir" value="out" />
+	<property name="srcDir" value="src/" />
+	
+	<property name="proguardHome" value="${sdk.dir}/tools/proguard/lib" />
+
+	<path id="BluetoothHelperUtilLib">
+		<fileset dir="libs/">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${sdk.dir}">
+			<include name="*platforms/android-19/android.jar" />
+		</fileset>
+	</path>
+	
+	<target name="init">
+	    <echo level="info">prepare dir....</echo>
+		<delete dir="${outDir}" />
+		<mkdir dir="${outDir}" />
+	</target>
+	
+	<target name="compile" depends="init">
+	    <echo level="info">compile.....</echo>
+		<javac fork="true" target="1.6" srcdir="${srcDir}" destdir="${outDir}" encoding="utf-8" >
+			<compilerarg line="-encoding GBK "/> 
+			<classpath refid="BluetoothHelperUtilLib" />
+		</javac>
+	</target>
+	
+	<target name="jar" depends="compile">
+	    <echo level="info">package.....</echo>
+		<jar jarfile="${compileJarName}">
+			<fileset dir="${outDir}" includes="**/*.*" />
+		</jar>
+	</target>
+
+	<target name="optimize" depends="jar">
+		<echo level="info">proguard.....</echo>
+		<java jar="${proguardHome}/proguard.jar" fork="true" failonerror="true">
+		    <jvmarg value="-Dmaximum.inlined.code.length=32" />
+		    <arg value="-injars ${compileJarName}" />
+		    <arg value="-outjars ${proguardJarName}" />
+		    <arg value="-libraryjars ${sdk.dir}/platforms/android-19/android.jar" />
+		    
+		    <arg value="-dontpreverify" />
+		    <arg value="-dontoptimize" />
+		    <arg value="-dontusemixedcaseclassnames" />
+		    <arg value="-repackageclasses ''" />
+		    <arg value="-allowaccessmodification" />
+		    
+		    <arg value="@proguard-project.txt" />
+		</java>
+	</target>
+	
+	<target name="combine" depends="optimize">
+	    <echo level="info">combine.....</echo>
+		<jar destfile="${combineJarName}">
+			<zipfileset src="${proguardJarName}" />
+		</jar>
+		<echo level="info">clean.....</echo>
+		<delete dir="${outDir}"/>
+		<delete file="${compileJarName}"/>
+		<delete file="${proguardJarName}"/>
+	</target>
+</project>
